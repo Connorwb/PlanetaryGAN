@@ -31,15 +31,20 @@ public class Neuron {
 	private Neuron[] prevLayer;
 	private Neuron[] nextLayer;
 	private double dCdASum;
-	private double dCdWsum;
-	private double batchSize;
+	private double dCdBSum;
+	private double [] dCdWSum;
+	private int batchSize;
 	private double activationVal;
+	private double dAdZ; 
 	private double bias;
 	private double[] weights;
 	
-	public Neuron(Behavior af, double batch) {
+	public Neuron(Behavior af, int batch) {
 		activationfunct = af;
 		batchSize = batch;
+		dAdZ =0 ;
+		dCdBSum = 0;
+		dCdASum = 0;
 	}
 	
 	public void backprop(double dCdaL) {
@@ -61,6 +66,7 @@ public class Neuron {
 		}
 		z += bias;
 		double a = activationfunct.activation(z);
+		dAdZ = activationfunct.derivative(z);
 		activationVal = a;
 	}
 	
@@ -70,6 +76,11 @@ public class Neuron {
 	
 	public void setPrevLayer(Neuron[] in) {
 		prevLayer = in;
+		try {
+			dCdWSum = new double[in.length];
+		} catch (Exception e) {
+			//nothing. probably bad practice?
+		}
 	}
 	
 	public Neuron[] getNextLayer() {
@@ -106,5 +117,34 @@ public class Neuron {
 			return false;
 		}
 		return true;
+	}
+	
+	public int getBatch() {
+		return batchSize;
+	}
+	
+	public double getDADZ() {
+		return dAdZ;
+	}
+	
+	public double getDCDA() {
+		return dCdASum;
+	}
+	
+	public void addToDCDW(double in, int index) {
+		dCdWSum[index] += in;
+		
+	}
+	
+	public void addToDCDB(double in) {
+		dCdBSum += in;
+	}
+	
+	public void addToDCDA(double in) {
+		
+	}
+	
+	public double getWeight(int in) {
+		return weights[in];
 	}
 }

@@ -87,7 +87,7 @@ public class ProgramWindow extends Application {
 		}
 		Trainer trainer = new Trainer(.05);
 		trainer.setOutputLayer(l3, false);
-		double [] results = trainer.getExample(input);
+		double [] results = trainer.getExample(input, l3);
 		System.out.println(results[0]);
 		System.out.println(results[1]);
 	}
