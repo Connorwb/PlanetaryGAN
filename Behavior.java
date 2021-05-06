@@ -2,7 +2,7 @@
  * Class: 
  * Author: Connor Bramhall
  * Date Created: 3/28/2021
- * Date Modified: 3/31/2021
+ * Date Modified: 5/3/2021
  * 
  * Purpose: The Behavior object holds the activation function for a node, along with relevant information.
  * 
