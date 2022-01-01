@@ -1,4 +1,5 @@
 import java.io.File;
+import java.util.Collections;
 
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -31,7 +32,7 @@ import javafx.util.Duration;
  * Class: 
  * Author: Connor Bramhall
  * Date Created: 3/28/2021
- * Date Modified: 5/3/2021
+ * Date Modified: 12/31/2021
  * 
  * Purpose: The ProgramWindow class initializes many of the main components of the network, and handles the 
  * GUI.
@@ -52,7 +53,7 @@ public class ProgramWindow extends Application {
 	private Trainer trainer;
 	private Pane settingsPane, trainPane;
 	private TestingPane testPane;
-	private Button createBut, toggleTraining, saveNet, loadNet, goTest;
+	private Button createBut, toggleTraining, saveNet, loadNet, goTest, encoderBut;
 	private ComboBox activations;
 	private Scene settingsScene, trainingScene, testingScene;
 	private Text guideSet, guideLoad, accDisp;
@@ -99,8 +100,10 @@ public class ProgramWindow extends Application {
 						"Random");
 		activations = new ComboBox<String>(options);
 		activations.relocate(106, 270);
-		createBut = new Button("Create");
-		createBut.relocate(128, 315);
+		createBut = new Button("Create GAN");
+		createBut.relocate(110, 315);
+		encoderBut = new Button("Create Autoencoder");
+		encoderBut.relocate(83, 360);
 		sizesBoxes = new TextField[4];
 		sizesBoxes[0] = new TextField("10");
 		sizesBoxes[0].setDisable(true);
@@ -162,6 +165,70 @@ public class ProgramWindow extends Application {
 				pStage.setTitle("Live Training Window");
 				pStage.setScene(trainingScene);
 			} catch (Exception exept) {
+				Alert alert = new Alert(Alert.AlertType.ERROR);
+				if (activations.getValue() == null) {
+					alert.setContentText("Make sure to select an activation type.");
+				} else {
+					alert.setContentText("Make sure only numbers are in the boxes.");
+				}
+				alert.show();
+			}
+		});
+		encoderBut.setOnAction(e -> {
+			try {
+				int [] parsedSizes = new int[sizesBoxes.length];
+				int validtally = 0;
+				for (int j = 0; j < sizesBoxes.length; j++) {
+					parsedSizes[j] = Integer.parseInt(sizesBoxes[j].getText());
+					if (parsedSizes[j] > 0) {
+						validtally += 1;
+					}
+				}
+				int [] sizes = new int[validtally];
+				for (int j = 0; j < validtally; j++) {
+					sizes[j] = parsedSizes[j];
+				}
+				String mode = (String) activations.getValue();
+				switch (mode) {
+					case "Sigmoid":
+						mode = "Sig";
+						break;
+					case "ReLU":
+						break;
+					case "SoftPlus":
+						mode = "Soft";
+						break;
+					case "Swish":
+						break;
+					case "Random":
+						mode = "Rand";
+						break;
+					default:
+						mode = "Sig";
+						break;	
+				}
+				trainer = new EncTrainer(0.1, datatosend);
+				NodeWriteHead writer = new NodeWriteHead(mode, sizes, false, 50);
+				trainer.setOutputLayer(writer.getOutputLayer(), false);
+				int [] newSizes = new int[sizes.length];
+				for (int i = sizes.length - 1; i >= 0; i--) {
+					newSizes[i] = sizes[sizes.length - (i + 1)];
+				}
+				writer = new NodeWriteHead(mode, newSizes, false, 50);
+				trainer.setOutputLayer(writer.getOutputLayer(), true);
+				//System.out.println("Network created without incident.");
+				defNoise = new double[15][sizes[0]];
+				for (int ii = 0; ii < defNoise.length; ii++) {
+					for (int iii = 0; iii < defNoise[ii].length; iii++) {
+						defNoise[ii][iii] = Math.random() * 2 - 1;
+					}
+				}
+				pStage.setWidth(1698);
+				pStage.setHeight(672);
+				pStage.setTitle("Live Training Window");
+				pStage.setScene(trainingScene);
+			} catch (Exception except) {
+				except.printStackTrace();
 				Alert alert = new Alert(Alert.AlertType.ERROR);
 				if (activations.getValue() == null) {
 					alert.setContentText("Make sure to select an activation type.");
@@ -251,7 +318,7 @@ public class ProgramWindow extends Application {
 			exampics[i] = new WritableImage(28, 28);
 		}
 		KeyFrame keyframe = new KeyFrame(Duration.millis(2000), action -> {
-			if ((!busy)&&isTraining) {
+			if (isTraining) {
 				busy = true;
 				trainer.train();
 				for (int i = 0; i < genList.length; i++) {
@@ -277,9 +344,20 @@ public class ProgramWindow extends Application {
 					}
 					realList[i].getGraphicsContext2D().drawImage(exampics[i], 0, 0, realList[i].getWidth(), realList[i].getHeight());
 				}
-				accDisp.setText("Discriminator Accuracy: " + trainer.getDiscAcc() + "%");
+				if (trainer instanceof EncTrainer) {
+					accDisp.setText("      Total Error: " + trainer.getDiscAcc());
+				} else {
+					accDisp.setText("Discriminator Accuracy: " + trainer.getDiscAcc() + "%");
+				}
 				//System.out.println(toshow[0] - trialKeep);
 				//trialKeep = toshow[0];
+				try {
+					trainer.join();
+				} catch (InterruptedException e1) {
+					Alert alert = new Alert(Alert.AlertType.ERROR);
+					alert.setContentText("Something went wrong with multithreading.");
+					e1.printStackTrace();
+				}
 				busy = false;
 			}
 			for (int i = 0; i < 6; i++) {
@@ -288,7 +366,7 @@ public class ProgramWindow extends Application {
 		});
 		
 		trainline.getKeyFrames().add(keyframe);
-		settingsPane.getChildren().addAll(activations, createBut, loadNet, guideSet, guideLoad);
+		settingsPane.getChildren().addAll(activations, createBut, loadNet, guideSet, guideLoad, encoderBut);
 		settingsPane.getChildren().addAll(sizesBoxes);
 		trainPane.getChildren().addAll(genList);
 		trainPane.getChildren().addAll(realList);
@@ -299,7 +377,7 @@ public class ProgramWindow extends Application {
 	@Override
 	public void start(Stage primaryStage) throws Exception {
 		pStage = primaryStage;
-		settingsScene = new Scene(settingsPane, 700, 400);
+		settingsScene = new Scene(settingsPane, 700, 425);
 		trainingScene = new Scene(trainPane, 700, 400);
 		testingScene = new Scene(testPane, 700, 400);
 		testPane.giveTransfers(settingsScene, pStage);

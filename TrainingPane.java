@@ -76,7 +76,7 @@ public class TrainingPane extends Pane {
 		Canvas canvasreal = new Canvas(224, 224);
 		canvasreal.setTranslateX(canvasgen.getWidth());
 		KeyFrame keyframe = new KeyFrame(Duration.millis(1000), action -> {
-			if ((!busy)&&isTraining) {
+			if (isTraining) {
 				busy = true;
 				trainer.train();
 				double [] toshow =  trainer.getExample(defNoise, trainer.getGenOutputLayer());
@@ -98,9 +98,12 @@ public class TrainingPane extends Pane {
 				//System.out.println(toshow[0] - trialKeep);
 				trialKeep = toshow[0];
 				busy = false;
-			}
-			for (int i = 0; i < 6; i++) {
-				trainer.train();
+				try {
+					trainer.join();
+				} catch (InterruptedException e1) {
+					isTraining = false;
+					e1.printStackTrace();
+				}
 			}
 		});
 		

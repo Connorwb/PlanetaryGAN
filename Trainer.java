@@ -2,19 +2,19 @@
  * Class: 
  * Author: Connor Bramhall
  * Date Created: 3/28/2021
- * Date Modified: 5/3/2021
+ * Date Modified: 12/31/2021
  * 
  * Purpose: This object manages the utilization of the Neural Network, as well as handling exporting images that
  * the network generates.
  *
  */
 
-public class Trainer {
-	private Neuron [] GenOutputLayer;
-	private Neuron [] DiscOutputLayer;
-	private double learningRate;
-	private double discError;
-	private double [][] samples;
+public class Trainer extends Thread {
+	protected Neuron [] GenOutputLayer;
+	protected Neuron [] DiscOutputLayer;
+	protected double learningRate;
+	protected double discError;
+	protected double [][] samples;
 	
 	public Trainer(double lr, double[][] data) {
 		learningRate = lr;
@@ -33,6 +33,12 @@ public class Trainer {
 			}
 		} else {
 			samples = data;
+		}
+	}
+	
+	public void run() {
+		for (int i = 0; i < 60; i++) {
+			train();
 		}
 	}
 	

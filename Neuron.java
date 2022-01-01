@@ -78,6 +78,7 @@ public class Neuron {
 		z += bias;
 		double a = activationfunct.activation(z);
 		dAdZ = activationfunct.derivative(z);
+		dCdASum = 0;
 		activationVal = a;
 	}
 	
